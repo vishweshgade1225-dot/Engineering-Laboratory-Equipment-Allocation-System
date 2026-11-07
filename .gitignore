@@ -1,0 +1,17 @@
+# Python bytecode and test caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Local virtual environments and configuration
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+
+# Flask's local instance directory
+/instance/
