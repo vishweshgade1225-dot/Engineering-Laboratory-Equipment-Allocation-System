@@ -2,6 +2,7 @@
 
 const bookingForm = document.getElementById("booking-form");
 const bookingMessage = document.getElementById("booking-message");
+const clearHistoryButton = document.getElementById("clear-history");
 
 function equipmentLabel(name) {
     return name.replaceAll("_", " ")
@@ -214,6 +215,32 @@ async function returnEquipment(bookingId) {
     }
 }
 
+clearHistoryButton.addEventListener("click", async () => {
+    const scope = clearHistoryButton.dataset.scope;
+    if (!window.confirm(`Clear ${scope} completed bookings?`)) return;
+
+    const message = document.getElementById("history-message");
+    clearHistoryButton.disabled = true;
+    try {
+        const response = await fetch("/history/clear", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: "{}"
+        });
+        if (!response.ok) throw new Error("Clear history failed");
+
+        const { cleared } = await response.json();
+        message.textContent = cleared
+            ? `Cleared ${cleared} completed booking${cleared === 1 ? "" : "s"}.`
+            : "No completed bookings to clear.";
+        await updateDashboard();
+    } catch (error) {
+        message.textContent = "Unable to clear history. Try again.";
+    } finally {
+        clearHistoryButton.disabled = false;
+    }
+});
+
 // 5. Automatically refresh every 2 seconds
 updateDashboard();
 setInterval(updateDashboard, 2000);
@@ -238,8 +265,9 @@ function updateWaitingQueue(waitingQueue) {
             row.className = "history-row";
 
             const details = document.createElement("span");
+            const rollNumber = student.enrollment ? ` (${student.enrollment})` : "";
             details.textContent =
-                `${student.student} (${student.enrollment}) | ` +
+                `${student.student}${rollNumber} | ` +
                 `${equipment.split("|").pop()} | ` +
                 `Position ${index + 1}`;
 

@@ -34,6 +34,7 @@ After starting Flask on your computer, open `http://127.0.0.1:5000` in your brow
 | `GET /status` | Read inventory counts, bookings, and waiting queues |
 | `POST /book` | Submit JSON with `student`, `enrollment`, `department`, `laboratory`, `equipment`, and `purpose` |
 | `POST /return` | Return equipment by sending JSON with its `booking_id` |
+| `POST /history/clear` | Send an empty JSON object to clear completed bookings visible to the current browser |
 
 For `POST /book`, use the full `department|laboratory|equipment` ID and choose `Practical`, `Experiment`, `Project`, or `Research` as the purpose.
 
@@ -57,4 +58,4 @@ Run `python test_concurrency.py` to check capacity under simultaneous requests, 
 
 In the [Render dashboard](https://dashboard.render.com/), create a Blueprint from this repository. [`render.yaml`](render.yaml) installs the requirements, starts Waitress on Render's assigned port, and checks the dashboard at `/`.
 
-The deployment uses one server process with multiple threads so every request sees the same inventory and queue. No application secrets are required. Demo mode uses fictional names and discards submitted enrollment numbers. All visitors share the same bookings, and the state resets whenever the server restarts, redeploys, or spins down.
+The deployment uses one server process with multiple threads so every request sees the same inventory and queue. The server generates its session key at startup. In public demo mode, visitors share the dashboard, but only the browser that submitted a booking can see its roll number or clear its completed entry. Clear History preserves active bookings and the waiting queue. Bookings reset whenever the server restarts, redeploys, or spins down.

@@ -1,6 +1,7 @@
 import os
+import secrets
 
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, session
 
 from equipment import (
     equipment,
@@ -17,12 +18,31 @@ from equipment_catalog import EQUIPMENT_CATALOG
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 16 * 1024
 app.config["PUBLIC_DEMO"] = os.environ.get("LABOS_PUBLIC_DEMO") == "1"
+app.config["SECRET_KEY"] = secrets.token_bytes(32)
+app.config["SESSION_COOKIE_SECURE"] = app.config["PUBLIC_DEMO"]
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+
+
+def owns_record(record):
+    if not app.config["PUBLIC_DEMO"]:
+        return True
+    owner = session.get("booking_owner")
+    return owner is not None and record.get("owner") == owner
+
+
+def visible_record(record):
+    details = {key: value for key, value in record.items() if key != "owner"}
+    if not owns_record(record):
+        details["enrollment"] = ""
+    return details
 
 
 # 1. Display Dashboard
 
 @app.route("/")
 def home():
+    if app.config["PUBLIC_DEMO"] and "booking_owner" not in session:
+        session["booking_owner"] = secrets.token_urlsafe(24)
     return render_template(
         "index.html",
         equipment_catalog=EQUIPMENT_CATALOG,
@@ -44,15 +64,12 @@ def book():
     equipment_name = data.get("equipment", "")
     purpose = data.get("purpose", "")
 
-    if app.config["PUBLIC_DEMO"]:
-        enrollment = "Demo"
-
     # Validate student information
     if not isinstance(student, str) or not student.strip() or len(student) > 80:
         return jsonify({"error": "Enter a student name of 1 to 80 characters"}), 400
 
-    if not isinstance(enrollment, str) or not enrollment.strip():
-        return jsonify({"error": "Enrollment number is required"}), 400
+    if not isinstance(enrollment, str) or not 1 <= len(enrollment.strip()) <= 40:
+        return jsonify({"error": "Enter a roll number of 1 to 40 characters"}), 400
 
     # Validate department, laboratory, and equipment
     if not all(isinstance(value, str) for value in (
@@ -77,18 +94,24 @@ def book():
     if purpose not in ("Practical", "Experiment", "Project", "Research"):
         return jsonify({"error": "Invalid purpose of use"}), 400
 
+    if app.config["PUBLIC_DEMO"] and "booking_owner" not in session:
+        session["booking_owner"] = secrets.token_urlsafe(24)
+
     result = book_equipment(
         student=student,
         equipment_name=equipment_name,
         enrollment=enrollment.strip(),
         department=department,
         laboratory=laboratory,
-        purpose=purpose
-    )    
+        purpose=purpose,
+        owner=session.get("booking_owner")
+    )
 
     if "error" in result:
         return jsonify(result), 400
 
+    if "booking" in result:
+        result["booking"] = visible_record(result["booking"])
     return jsonify(result)
 
 # 3. Return Equipment
@@ -107,7 +130,23 @@ def return_item():
     if "error" in result:
         return jsonify(result), 400
 
+    if "booking" in result:
+        result["booking"] = visible_record(result["booking"])
     return jsonify(result)
+
+
+@app.route("/history/clear", methods=["POST"])
+def clear_history():
+    if request.get_json(silent=True) != {}:
+        return jsonify({"error": "Expected an empty JSON object"}), 400
+
+    with mutex:
+        previous_count = len(bookings)
+        bookings[:] = [
+            booking for booking in bookings
+            if booking["status"] != "returned" or not owns_record(booking)
+        ]
+        return jsonify({"cleared": previous_count - len(bookings)})
 
 
 # 4. Display Live Equipment Status
@@ -136,11 +175,11 @@ def status():
                 "waiting": len(waiting[name])
             }
 
-        return jsonify({
+        response = jsonify({
             "equipment": equipment_status,
-            "bookings": list(bookings),
+            "bookings": [visible_record(booking) for booking in bookings],
             "waiting_queue": {
-                name: list(queue)
+                name: [visible_record(record) for record in queue]
                 for name, queue in waiting.items()
             },
             "total": sum(equipment.values()),
@@ -153,7 +192,9 @@ def status():
                 len(queue)
                 for queue in waiting.values()
             )
-    })
+        })
+        response.cache_control.no_store = True
+        return response
 
 if __name__ == "__main__":
     app.run(debug=True, threaded=True)

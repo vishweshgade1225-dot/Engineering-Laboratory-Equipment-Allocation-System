@@ -181,29 +181,25 @@
                 <form id="booking-form">
 
                     {% if public_demo %}
-                    <p>Public demo. Use a fictional name. All visitors share the dashboard.</p>
-                    <label for="student">DEMO ALIAS</label>
-                    <input type="hidden" id="enrollment" value="Demo">
-                    {% else %}
-                    <label for="student">STUDENT NAME</label>
+                    <p>Visitors share the dashboard. Your roll number is visible only in this browser. Use a display name you are comfortable sharing.</p>
                     {% endif %}
+                    <label for="student">STUDENT NAME</label>
                     <input
                         type="text"
                         id="student"
-                        placeholder="{{ 'Enter a fictional name' if public_demo else 'Enter student full name' }}"
+                        placeholder="Enter student name"
                         maxlength="80"
                         required
                     >
 
-                    {% if not public_demo %}
-                    <label for="enrollment">ENROLLMENT NUMBER</label>
+                    <label for="enrollment">ROLL NUMBER</label>
                     <input
                     type="text"
                     id="enrollment"
-                    placeholder="Enter enrollment number"
+                    placeholder="Enter your roll number"
+                    maxlength="40"
                     required
                     >
-                    {% endif %}
 
                     <!-- DEPARTMENT -->
                     <label for="department">DEPARTMENT</label>
@@ -325,14 +321,17 @@
                     <p class="eyebrow">ACTIVITY LOG</p>
                     <h2>Allocation History</h2>
                 </div>
+                <button type="button" class="return-btn" id="clear-history"
+                        data-scope="{{ 'your' if public_demo else 'all' }}">Clear History</button>
             </div>
+            <p id="history-message" role="status"></p>
 
             <div class="table-wrapper">
                 <table class="history-table">
                     <thead>
                         <tr>
                             <th>STUDENT</th>
-                            <th>ENROLLMENT NO.</th>
+                            <th>ROLL NO.</th>
                             <th>DEPARTMENT</th>
                             <th>LABORATORY</th>
                             <th>EQUIPMENT</th>

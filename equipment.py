@@ -56,7 +56,8 @@ def book_equipment(
     enrollment="",
     department="",
     laboratory="",
-    purpose=""
+    purpose="",
+    owner=None
 ):
     if equipment_name not in equipment:
         return {"error": "Invalid equipment selected"}
@@ -73,6 +74,8 @@ def book_equipment(
         "laboratory": laboratory,
         "purpose": purpose
     }
+    if owner is not None:
+        student_details["owner"] = owner
 
     with mutex:
         semaphore = semaphores[equipment_name]
