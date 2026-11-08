@@ -2,6 +2,8 @@
 
 LabOS is a Flask dashboard for booking and returning engineering lab equipment. Students select a department, laboratory, and item, then enter their enrollment details and purpose. If every unit of an item is in use, LabOS adds the student to a first-in, first-out queue and assigns the next returned unit to the student at the front of that queue.
 
+**[Open the live LabOS dashboard](https://labos-equipment-allocation.onrender.com/)**. The first visit after the service has been idle may take about a minute.
+
 ## Run locally
 
 From the project directory, use Python 3.12 to create a virtual environment, install Flask, and start the development server.
@@ -22,7 +24,7 @@ python3 -m venv .venv
 .venv/bin/python app.py
 ```
 
-Open the [LabOS dashboard](http://127.0.0.1:5000). The server runs in Flask debug mode for local development. Bookings and waiting queues live in memory and reset whenever the server process restarts.
+After starting Flask on your computer, open `http://127.0.0.1:5000` in your browser. The server runs in Flask debug mode for local development. Bookings and waiting queues live in memory and reset whenever the server process restarts.
 
 ## HTTP endpoints
 
