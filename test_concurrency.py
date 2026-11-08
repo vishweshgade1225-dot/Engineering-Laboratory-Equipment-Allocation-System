@@ -5,7 +5,8 @@ from equipment import (
     bookings,
     waiting,
     mutex,
-    book_equipment
+    book_equipment,
+    return_equipment
 )
 
 # Students requesting equipment simultaneously
@@ -26,7 +27,7 @@ results = []
 results_lock = threading.Lock()
 
 # All students request the same equipment
-equipment_name = "oscilloscope"
+equipment_name = "ECE|Electronic Circuits Lab|Oscilloscope"
 
 # Synchronize thread start times
 start_barrier = threading.Barrier(len(students))
@@ -86,8 +87,8 @@ print(f"Allocated         : {len(allocated)}")
 print(f"Waiting           : {len(waiting_students)}")
 
 # Verify that overbooking did not occur
-assert len(allocated) == 2, "Unexpected allocation count!"
-assert len(waiting_students) == 8, "Unexpected waiting count!"
+assert len(allocated) == equipment[equipment_name], "Unexpected allocation count!"
+assert len(waiting_students) == len(students) - len(allocated), "Unexpected waiting count!"
 
 print("\nTEST PASSED: No equipment overbooking occurred!")
 
@@ -96,7 +97,7 @@ print("\nTEST PASSED: No equipment overbooking occurred!")
 print("\nTESTING INDEPENDENT SEMAPHORES")
 print("-" * 45)
 
-result = book_equipment("Vikram", "multimeter")
+result = book_equipment("Vikram", "ECE|Electronic Circuits Lab|Digital Multimeter")
 
 print("Student  : Vikram")
 print("Equipment: Multimeter")
@@ -107,3 +108,9 @@ assert result["status"] == "success", (
 )
 
 print("\nTEST PASSED: Equipment semaphores are independent!")
+
+result = return_equipment(allocated[0]["id"])
+assert result["booking"]["student"] == waiting_students[0]["student"]
+assert waiting[equipment_name] == waiting_students[1:]
+assert "error" in return_equipment(allocated[0]["id"])
+print("TEST PASSED: Returns promote the first waiting student exactly once!")

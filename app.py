@@ -1,3 +1,4 @@
+import os
 
 from flask import Flask, render_template, request, jsonify
 
@@ -14,6 +15,8 @@ from equipment import (
 from equipment_catalog import EQUIPMENT_CATALOG
 
 app = Flask(__name__)
+app.config["MAX_CONTENT_LENGTH"] = 16 * 1024
+app.config["PUBLIC_DEMO"] = os.environ.get("LABOS_PUBLIC_DEMO") == "1"
 
 
 # 1. Display Dashboard
@@ -22,14 +25,17 @@ app = Flask(__name__)
 def home():
     return render_template(
         "index.html",
-        equipment_catalog=EQUIPMENT_CATALOG
+        equipment_catalog=EQUIPMENT_CATALOG,
+        public_demo=app.config["PUBLIC_DEMO"]
     )
 
 # 2. Book Equipment
 
 @app.route("/book", methods=["POST"])
 def book():
-    data = request.get_json(silent=True) or {}
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return jsonify({"error": "Expected a JSON object"}), 400
 
     student = data.get("student", "")
     enrollment = data.get("enrollment", "")
@@ -38,9 +44,12 @@ def book():
     equipment_name = data.get("equipment", "")
     purpose = data.get("purpose", "")
 
+    if app.config["PUBLIC_DEMO"]:
+        enrollment = "Demo"
+
     # Validate student information
-    if not isinstance(student, str) or not student.strip():
-        return jsonify({"error": "Student name is required"}), 400
+    if not isinstance(student, str) or not student.strip() or len(student) > 80:
+        return jsonify({"error": "Enter a student name of 1 to 80 characters"}), 400
 
     if not isinstance(enrollment, str) or not enrollment.strip():
         return jsonify({"error": "Enrollment number is required"}), 400
@@ -85,9 +94,13 @@ def book():
 # 3. Return Equipment
 @app.route("/return", methods=["POST"])
 def return_item():
-    data = request.get_json(silent=True) or {}
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return jsonify({"error": "Expected a JSON object"}), 400
 
     booking_id = data.get("booking_id", "")
+    if not isinstance(booking_id, str) or not booking_id:
+        return jsonify({"error": "Booking ID is required"}), 400
 
     result = return_equipment(booking_id)
 

@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: labos-equipment-allocation
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: waitress-serve --host=0.0.0.0 --port=$PORT app:app
+    healthCheckPath: /
+    envVars:
+      - key: LABOS_PUBLIC_DEMO
+        value: "1"

@@ -10,7 +10,7 @@ From the project directory, use Python 3.12 to create a virtual environment, ins
 
 ```powershell
 python -m venv .venv
-.\.venv\Scripts\python.exe -m pip install Flask
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
 .\.venv\Scripts\python.exe app.py
 ```
 
@@ -18,7 +18,7 @@ python -m venv .venv
 
 ```bash
 python3 -m venv .venv
-.venv/bin/python -m pip install Flask
+.venv/bin/python -m pip install -r requirements.txt
 .venv/bin/python app.py
 ```
 
@@ -49,4 +49,10 @@ For `POST /book`, use the full `department|laboratory|equipment` ID and choose `
 
 Submit a booking from the dashboard and confirm that the in-use count increases. Fill an item's capacity, submit another request, then return one of the active bookings to verify that the first waiting student receives it.
 
-The existing `test_concurrency.py` script uses legacy item names such as `oscilloscope`. The current inventory uses `department|laboratory|equipment` IDs, so the script needs updated IDs and matching capacity expectations before it can validate concurrent bookings.
+Run `python test_concurrency.py` to check capacity under simultaneous requests, independent equipment semaphores, and first-in, first-out reassignment on return.
+
+## Deploy a public demo
+
+In the [Render dashboard](https://dashboard.render.com/), create a Blueprint from this repository. [`render.yaml`](render.yaml) installs the requirements, starts Waitress on Render's assigned port, and checks the dashboard at `/`.
+
+The deployment uses one server process with multiple threads so every request sees the same inventory and queue. No application secrets are required. Demo mode uses fictional names and discards submitted enrollment numbers. All visitors share the same bookings, and the state resets whenever the server restarts, redeploys, or spins down.
